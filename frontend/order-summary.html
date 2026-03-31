@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Modern Cafe | Order Summary</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container" style="padding-bottom: 20px;">
+
+        <div style="background-color: var(--primary); padding: 50px 24px 30px; color: var(--white); text-align: center; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; position: relative; overflow: hidden;">
+            <div style="background-color: rgba(255,255,255,0.2); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                <i class="fa-solid fa-check" style="font-size: 2.5rem;"></i>
+            </div>
+            <h1 style="color: var(--white); font-size: 1.5rem; margin-bottom: 8px;">Order Placed!</h1>
+            <p style="opacity: 0.9; font-size: 0.95rem;">Thank you, your delicious coffee is being prepared.</p>
+            
+            <div style="position: absolute; top: -50px; left: -50px; width: 150px; height: 150px; background-color: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+            <div style="position: absolute; bottom: -50px; right: -50px; width: 120px; height: 120px; background-color: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+        </div>
+
+        <div style="padding: 24px;">
+            <div style="background-color: var(--white); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); margin-top: -40px; position: relative; z-index: 10;">
+                <div class="d-flex justify-between align-center mb-3 pb-3" style="border-bottom: 1px dashed #E5E7EB;">
+                    <span class="text-muted" style="font-size: 0.9rem;">Order ID</span>
+                    <span class="font-semibold text-dark">#MC-84920</span>
+                </div>
+                <div class="d-flex justify-between align-center mb-3">
+                    <span class="text-muted" style="font-size: 0.9rem;">Date & Time</span>
+                    <span class="font-semibold text-dark" id="order-date">Just Now</span>
+                </div>
+                <div class="d-flex justify-between align-center mb-3">
+                    <span class="text-muted" style="font-size: 0.9rem;">Estimated Time</span>
+                    <span class="font-semibold text-accent">10 - 15 Mins</span>
+                </div>
+                <div class="d-flex justify-between align-center">
+                    <span class="text-muted" style="font-size: 0.9rem;">Dining Option</span>
+                    <span class="font-semibold text-dark" id="order-type">--</span>
+                </div>
+            </div>
+
+            <h3 class="mt-4 mb-3" style="font-size: 1.1rem; color: var(--text-dark);">Order Details</h3>
+            <div id="summary-items" style="background-color: var(--white); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); margin-bottom: 1.5rem;">
+                
+            </div>
+
+            <div class="order-summary" style="margin: 0;">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span id="summary-subtotal" class="font-semibold text-dark">₹0</span>
+                </div>
+                <div class="summary-row">
+                    <span>Service Fee</span>
+                    <span class="font-semibold text-dark">₹40</span>
+                </div>
+                <div class="summary-total">
+                    <span>Total Paid</span>
+                    <span id="summary-total-price" class="text-primary">₹0</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary w-100 mt-4" style="border-radius: 12px; padding: 16px; font-size: 1.1rem;" onclick="location.href='index.html'">
+                Back to Home
+            </button>
+        </div>
+
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const orderData = JSON.parse(localStorage.getItem('lastOrder'));
+            if(!orderData || !orderData.items || orderData.items.length === 0) {
+                document.getElementById('summary-items').innerHTML = '<p class="text-muted text-center py-3">No recent order found.</p>';
+                return;
+            }
+
+            const now = new Date();
+            document.getElementById('order-date').innerText = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            document.getElementById('order-type').innerText = orderData.orderType === 'dinein' ? `Dine-in (Table ${orderData.tableNum || 'N/A'})` : 'Takeaway';
+
+            const itemsContainer = document.getElementById('summary-items');
+            itemsContainer.innerHTML = orderData.items.map(item => `
+                <div class="d-flex justify-between align-center mb-3">
+                    <div class="d-flex align-center gap-2">
+                        <span style="font-weight: 600; color: var(--primary); min-width: 20px;">${item.quantity}x</span>
+                        <span class="text-dark" style="font-size: 0.95rem;">${item.name}</span>
+                    </div>
+                    <span class="font-semibold text-dark">${formatPrice(item.price * item.quantity)}</span>
+                </div>
+            `).join('');
+
+            const subtotal = orderData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const fee = 40;
+            const total = subtotal + fee;
+            document.getElementById('summary-subtotal').innerText = formatPrice(subtotal);
+            document.getElementById('summary-total-price').innerText = formatPrice(total);
+        });</script>
+</body>
+</html>

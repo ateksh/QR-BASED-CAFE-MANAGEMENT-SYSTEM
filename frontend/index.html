@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Modern Cafe | Home</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <header class="header">
+            <div class="header-title">
+                <p>Welcome back,</p>
+                <h1>James Anderson</h1>
+            </div>
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150&auto=format&fit=crop" alt="Profile" class="profile-img">
+        </header>
+
+        <div class="search-container">
+            <div class="search-bar" onclick="location.href='menu.html'">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search your favorite coffee..." readonly style="pointer-events: none;">
+                <button class="search-filter"><i class="fa-solid fa-sliders"></i></button>
+            </div>
+        </div>
+
+        <div class="banner-container">
+            <div class="promo-banner" onclick="location.href='product.html?id=17'">
+                <div class="promo-content">
+                    <span class="promo-badge">Limited Time</span>
+                    <h2>Get 20% Off</h2>
+                    <p>On all premium desserts today</p>
+                </div>
+                <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=150&auto=format&fit=crop" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; z-index: 2;" alt="Promo">
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2 class="section-title">Categories</h2>
+            <a href="menu.html" class="view-all">View All</a>
+        </div>
+        <div class="categories-scroll" id="home-categories">
+            
+        </div>
+
+        <div class="section-header mt-4">
+            <h2 class="section-title">Popular Now</h2>
+        </div>
+        <div class="products-grid" id="popular-products">
+            
+        </div>
+
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderBottomNav('home');
+
+            const catIcons = {
+                'Hot Coffee': 'fa-mug-hot',
+                'Cold Coffee': 'fa-snowflake',
+                'Non-Coffee Drinks': 'fa-glass-water',
+                'Snacks': 'fa-burger',
+                'Desserts': 'fa-cake-candles'
+            };
+            const catContainer = document.getElementById('home-categories');
+            catContainer.innerHTML = categories.map((cat, index) => `
+                <div class="category-pill ${index === 0 ? 'active' : ''}" onclick="goToCategory('${cat}')">
+                    <div class="category-icon">
+                        <i class="fa-solid ${catIcons[cat] || 'fa-mug-saucer'}"></i>
+                    </div>
+                    <span class="category-name">${cat.split(' ').join('<br>')}</span>
+                </div>
+            `).join('');
+
+            const popularItems = products.filter(p => [2, 6, 17, 14].includes(p.id));
+            const popContainer = document.getElementById('popular-products');
+            popContainer.innerHTML = popularItems.map(p => createProductCardHTML(p)).join('');
+        });
+
+        function goToCategory(catName) {
+            localStorage.setItem('selectedCategory', catName);
+            location.href = 'menu.html';
+        }</script>
+</body>
+</html>

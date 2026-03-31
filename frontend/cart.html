@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Modern Cafe | Cart</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <header class="page-header">
+            <button class="nav-back d-flex" style="border: none; background: transparent; width: auto; height: auto;" onclick="history.back()">
+                <i class="fa-solid fa-chevron-left" style="font-size: 1.2rem;"></i>
+            </button>
+            <h1 style="font-size: 1.25rem; font-weight: 600;">My Cart</h1>
+        </header>
+
+        <div class="cart-items" id="cart-items-container">
+            
+        </div>
+
+        <div class="order-summary" id="order-summary" style="display: none;">
+            <div class="summary-row">
+                <span>Subtotal</span>
+                <span id="cart-subtotal" class="font-semibold text-dark">₹0</span>
+            </div>
+            <div class="summary-row">
+                <span>Delivery / Service Fee</span>
+                <span class="font-semibold text-dark">₹40</span>
+            </div>
+            <div class="summary-total">
+                <span>Total</span>
+                <span id="cart-total">₹0</span>
+            </div>
+            
+            <button class="btn btn-primary w-100 mt-4" style="border-radius: 12px; padding: 16px;" onclick="location.href='checkout.html'">
+                Proceed to Checkout
+            </button>
+        </div>
+
+        <div class="empty-state" id="empty-state" style="display: none;">
+            <i class="fa-solid fa-basket-shopping"></i>
+            <h3>Your cart is empty</h3>
+            <p>Looks like you haven't added any premium coffee or desserts yet.</p>
+            <button class="btn btn-accent" onclick="location.href='menu.html'">Explore Menu</button>
+        </div>
+
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderBottomNav('cart');
+            renderCart();
+        });
+
+        function renderCart() {
+            const container = document.getElementById('cart-items-container');
+            const summary = document.getElementById('order-summary');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (cart.length === 0) {
+                container.innerHTML = '';
+                summary.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            summary.style.display = 'block';
+
+            container.innerHTML = cart.map((item, index) => `
+                <div class="cart-item">
+                    <img src="${item.image}" alt="${item.name}" class="cart-img">
+                    <div class="cart-info">
+                        <h3>${item.name}</h3>
+                        <p>${item.category}</p>
+                        <div class="cart-price-qty">
+                            <span class="cart-price">${formatPrice(item.price * item.quantity)}</span>
+                            <div class="cart-qty">
+                                <button onclick="updateCartItem(${index}, -1)"><i class="fa-solid fa-minus"></i></button>
+                                <span>${item.quantity}</span>
+                                <button onclick="updateCartItem(${index}, 1)"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            calculateTotal();
+        }
+
+        function updateCartItem(index, change) {
+            if (cart[index]) {
+                const newQty = cart[index].quantity + change;
+                if (newQty <= 0) {
+                    cart.splice(index, 1);
+                } else if(newQty <= 10) {
+                    cart[index].quantity = newQty;
+                }
+                saveCart();
+                renderCart();
+            }
+        }
+
+        function calculateTotal() {
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const fee = 40;
+            const total = subtotal + fee;
+            
+            document.getElementById('cart-subtotal').innerText = formatPrice(subtotal);
+            document.getElementById('cart-total').innerText = formatPrice(total);
+        }
+    </script>
+</body>
+</html>

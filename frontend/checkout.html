@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Modern Cafe | Checkout</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container" style="padding-bottom: 20px;">
+        
+        <header class="page-header">
+            <button class="nav-back d-flex" style="border: none; background: transparent; width: auto; height: auto;" onclick="history.back()">
+                <i class="fa-solid fa-chevron-left" style="font-size: 1.2rem;"></i>
+            </button>
+            <h1 style="font-size: 1.25rem; font-weight: 600;">Checkout</h1>
+        </header>
+
+        <div class="checkout-form">
+
+            <div class="form-section">
+                <h3>Contact Details</h3>
+                <div class="input-group">
+                    <i class="fa-regular fa-user"></i>
+                    <input type="text" class="input-field" id="customer-name" placeholder="Full Name">
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-mobile-screen"></i>
+                    <input type="tel" class="input-field" id="customer-phone" placeholder="Phone Number">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Dining Option</h3>
+                <div class="payment-methods" style="margin-bottom: 12px;">
+                    <div class="payment-card selected" id="opt-dinein" onclick="selectOption('dinein')">
+                        <i class="fa-solid fa-shop"></i>
+                        <span>Dine-In</span>
+                    </div>
+                </div>
+                
+                <div class="input-group" id="table-input-group">
+                    <i class="fa-solid fa-utensils"></i>
+                    <input type="number" class="input-field" placeholder="Table Number (Optional)">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Payment Method</h3>
+                <div class="payment-methods">
+                    <div class="payment-card selected" id="pay-cod" onclick="selectPayment('cod')">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                        <span>Cash on Delivery</span>
+                    </div>
+                    <div class="payment-card" id="pay-rzp" onclick="selectPayment('rzp')">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Pay Online (Razorpay)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="summary-total mt-4 mb-4">
+                <span>Total to Pay</span>
+                <span id="checkout-total" class="text-primary">₹0</span>
+            </div>
+
+            <button class="btn btn-primary w-100" id="btn-place-order" style="border-radius: 12px; padding: 16px; font-size: 1.1rem;" onclick="handleCheckout()">
+                Place Order
+            </button>
+
+        </div>
+
+    </div>
+
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="js/main.js"></script>
+
+<script>
+
+let socket = null;
+try {
+    if (typeof io !== "undefined") {
+        socket = io(window.location.protocol === 'file:' ? 'http://localhost:3000' : undefined);
+    }
+} catch (e) {
+    console.warn("Socket.io not found. Using local storage.");
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const fee = 40;
+    const total = subtotal > 0 ? subtotal + fee : 0;
+
+    document.getElementById('checkout-total').innerText = formatPrice(total);
+
+    const scannedTable = localStorage.getItem('scannedTable');
+    if (scannedTable) {
+        selectOption('dinein');
+        const tableInput = document.querySelector('#table-input-group input');
+        tableInput.value = scannedTable;
+        tableInput.setAttribute('readonly', 'true');
+        tableInput.style.backgroundColor = 'var(--bg-light)';
+    }
+});
+
+function selectOption(opt) {
+
+    document.getElementById('opt-dinein').classList.remove('selected');
+    document.getElementById(`opt-${opt}`).classList.add('selected');
+
+    const tableGroup = document.getElementById('table-input-group');
+
+    if(opt === 'dinein'){
+        tableGroup.style.display = 'block';
+    } else {
+        tableGroup.style.display = 'none';
+    }
+}
+
+function selectPayment(method) {
+    document.getElementById('pay-cod').classList.remove('selected');
+    document.getElementById('pay-rzp').classList.remove('selected');
+    document.getElementById(`pay-${method}`).classList.add('selected');
+
+    const btn = document.getElementById('btn-place-order');
+    if (method === 'rzp') {
+        btn.innerHTML = '<i class="fa-solid fa-lock"></i> Pay Securely with Razorpay';
+    } else {
+        btn.innerHTML = 'Place Order';
+    }
+}
+
+window.handleCheckout = function(){
+
+    if(cart.length === 0){
+        alert("Cart is empty");
+        return;
+    }
+
+    const orderType = 'dinein';
+
+    const tableNum =
+        document.querySelector('#table-input-group input').value || "";
+
+    const paymentMethod = 
+        document.getElementById('pay-rzp').classList.contains('selected')
+        ? 'Razorpay' 
+        : 'Cash';
+
+    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) + 40;
+
+    const newOrder = {
+        id: "MC-" + Math.floor(10000 + Math.random() * 90000),
+        items: cart,
+        orderType: orderType,
+        tableNum: tableNum,
+        paymentMethod: paymentMethod,
+        timestamp: new Date().toISOString(),
+        status: "Pending",
+        total: totalAmount
+    };
+
+    if (paymentMethod === 'Razorpay') {
+
+        initiateRazorpayPayment(newOrder, totalAmount);
+    } else {
+
+        finalizeOrder(newOrder);
+    }
+}
+
+async function initiateRazorpayPayment(orderObj, amount) {
+    try {
+        const pyUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/payment/create-order' : '/api/payment/create-order';
+        const response = await fetch(pyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: amount })
+        });
+        const data = await response.json();
+        if (!data.success) {
+            alert("Failed to create Razorpay check. " + data.message);
+            return;
+        }
+
+        const options = {
+            key: data.key_id || "rzp_test_dummykey12345",
+            amount: data.order.amount,
+            currency: "INR",
+            name: "Modern Cafe",
+            description: "Cafe Order Payment",
+            order_id: data.order.id,
+            handler: async function (response) {
+                const verifyUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/payment/verify-payment' : '/api/payment/verify-payment';
+                const verifyRes = await fetch(verifyUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature
+                    })
+                });
+                const verifyData = await verifyRes.json();
+                if (verifyData.success) {
+                    alert('Payment Successful!');
+                    orderObj.payment_status = "Paid";
+                    finalizeOrder(orderObj);
+                } else {
+                    alert('Payment Verification Failed!');
+                }
+            },
+            prefill: {
+                name: document.getElementById('customer-name').value || "Guest User",
+                email: "guest@example.com",
+                contact: document.getElementById('customer-phone').value || "9999999999"
+            },
+            theme: {
+                color: "#8BC34A"
+            }
+        };
+
+        if (data.simulated || options.key === "rzp_test_dummykey12345" || options.key.includes('dummy')) {
+            alert('Razorpay API Keys are invalid or missing. Auto-simulating a successful payment for testing!');
+            orderObj.payment_status = "Paid";
+            finalizeOrder(orderObj);
+            return;
+        }
+
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function (response){
+            alert("Payment Failed! " + response.error.description);
+        });
+        rzp.open();
+    } catch (err) {
+        console.error(err);
+        alert('Payment process encountered an error.');
+    }
+}
+
+async function finalizeOrder(newOrder) {
+
+    try {
+        const customerNameInput = document.getElementById('customer-name').value || "Guest";
+        const apiUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/orders' : '/api/orders';
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                customerName: customerNameInput,
+                items: newOrder.items,
+                totalAmount: newOrder.total,
+                orderType: newOrder.orderType,
+                tableNum: newOrder.tableNum,
+                paymentMethod: newOrder.paymentMethod
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert('Failed to place order: ' + (data.message || 'Unknown error'));
+            return;
+        }
+
+        newOrder.id = data._id;
+
+        localStorage.setItem("lastOrder", JSON.stringify(newOrder));
+
+        let allOrders = JSON.parse(localStorage.getItem('allOrders')) || [];
+        allOrders.unshift(newOrder);
+        localStorage.setItem('allOrders', JSON.stringify(allOrders));
+
+        if(socket){
+            socket.emit("newOrder", newOrder);
+        }
+
+        localStorage.removeItem("cart");
+        cart = [];
+
+        alert("Order placed successfully!");
+
+        window.location.href = "order-summary.html";
+    } catch (error) {
+        console.error('Error finalising order:', error);
+        alert('An error occurred submitting the order.');
+    }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script>
+        const authToken = sessionStorage.getItem('adminToken');
+        if (!authToken || authToken === 'undefined' || authToken === 'null') {
+            sessionStorage.setItem('redirectAfterLogin', 'kitchen.html');
+            window.location.replace('login.html');
+        }
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Modern Cafe | Kitchen Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .kitchen-header {
+            background-color: var(--primary);
+            color: var(--white);
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kitchen-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .order-card {
+            background-color: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border-left: 5px solid var(--accent);
+        }
+
+        .order-card.completed {
+            border-left-color: #10B981;
+            opacity: 0.7;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+        }
+
+        .order-id {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .order-type {
+            font-size: 0.85rem;
+            background-color: var(--secondary);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .order-items {
+            margin-bottom: 16px;
+        }
+
+        .order-item-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .qty-badge {
+            background-color: var(--text-dark);
+            color: var(--white);
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            font-size: 0.8rem;
+            margin-right: 8px;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-complete {
+            background-color: var(--accent);
+            color: var(--white);
+        }
+
+        .btn-complete:hover {
+            background-color: var(--primary);
+        }
+
+        .btn-undo {
+            background-color: var(--secondary);
+            color: var(--primary);
+        }</style>
+</head>
+
+<body style="background-color: var(--bg-light);">
+    <div class="app-container" style="max-width: 800px; padding-bottom: 40px; min-height: 100vh;">
+
+        <header class="kitchen-header">
+            <h1 class="kitchen-title"><i class="fa-solid fa-fire-burner"></i> Kitchen Display</h1>
+            <div class="header-actions">
+                <button class="btn btn-outline" style="color:white; border-color:white; margin-right:10px"
+                    onclick="logout()">Logout</button>
+                <button class="btn btn-outline" style="color:white; border-color:white; margin-right:10px"
+                    onclick="location.href='admin.html'">Admin</button>
+                <button class="btn btn-outline" style="color:white; border-color:white;"
+                    onclick="location.href='index.html'">App</button>
+            </div>
+        </header>
+
+        <div style="padding: 24px;" id="kitchen-orders">
+            
+        </div>
+
+    </div>
+
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script>
+        let socket;
+        let currentOrders = [];
+        let sessionToken = sessionStorage.getItem('adminToken');
+
+        function logout() {
+            sessionStorage.removeItem('adminToken');
+            window.location.replace('login.html');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchInitialOrders();
+            try {
+                if (typeof io !== "undefined") {
+                    socket = io(window.location.protocol === 'file:' ? 'http://localhost:3000' : undefined);
+                } else throw new Error("Socket not found");
+
+                socket.on('orderAdded', (order) => {
+                    currentOrders.unshift(order);
+                    renderKitchen();
+                });
+
+                socket.on('orderStatusChanged', ({ id, newStatus }) => {
+                    const orderIndex = currentOrders.findIndex(o => o.id === id);
+                    if (orderIndex !== -1) {
+                        currentOrders[orderIndex].status = newStatus;
+                        renderKitchen();
+                    }
+                });
+
+                socket.on('ordersCleared', () => {
+                    currentOrders = [];
+                    renderKitchen();
+                });
+            } catch(e) {
+                console.warn("Running in local mode - Socket.io not found.");
+                setInterval(() => {
+                    fetchInitialOrders();
+                }, 2000);
+                fetchInitialOrders();
+            }
+        });
+
+        async function fetchInitialOrders() {
+            try {
+                const apiUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/orders' : '/api/orders';
+                const res = await fetch(apiUrl, {
+                    headers: { 'Authorization': `Bearer ${sessionToken}` }
+                });
+                
+                if (res.status === 401 || res.status === 403) {
+                    sessionStorage.removeItem('adminToken');
+                    sessionStorage.setItem('redirectAfterLogin', 'kitchen.html');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                const data = await res.json();
+                currentOrders = data.map(o => ({
+                    ...o,
+                    id: o._id,
+                    timestamp: o.createdAt,
+                    total: o.totalAmount,
+                    status: o.orderStatus
+                }));
+                renderKitchen();
+            } catch(e) {
+                console.error("Failed to fetch initial orders from DB", e);
+            }
+        }
+
+        async function toggleOrderStatus(orderId) {
+            const orderIndex = currentOrders.findIndex(o => o.id === orderId);
+            if (orderIndex !== -1) {
+                const newStatus = currentOrders[orderIndex].status === 'Pending' ? 'Completed' : 'Pending';
+                try {
+                    const apiUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/orders' : '/api/orders';
+                    await fetch(`${apiUrl}/${orderId}`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${sessionToken}`
+                        },
+                        body: JSON.stringify({ orderStatus: newStatus })
+                    });
+
+                    if (socket) {
+                        socket.emit('updateOrderStatus', { id: orderId, newStatus });
+                    } else {
+                        currentOrders[orderIndex].status = newStatus;
+                        renderKitchen();
+                    }
+                } catch(e) {
+                    console.error("Failed to update status in DB", e);
+                }
+            }
+        }
+
+        function renderKitchen() {
+            const container = document.getElementById('kitchen-orders');
+
+            if (currentOrders.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 50px 20px; color: var(--text-muted);">
+                        <i class="fa-solid fa-mug-hot" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <h2>No orders yet</h2>
+                        <p>Waiting for customers to place orders...</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sortedOrders = [...currentOrders].sort((a, b) => {
+                if (a.status === 'Pending' && b.status === 'Completed') return -1;
+                if (a.status === 'Completed' && b.status === 'Pending') return 1;
+                return new Date(b.timestamp) - new Date(a.timestamp);
+            });
+
+            container.innerHTML = sortedOrders.map(order => `
+                <div class="order-card ${order.status === 'Completed' ? 'completed' : ''}">
+                    <div class="order-header">
+                        <div>
+                            <span class="order-id">${order.id}</span>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+                                ${new Date(order.timestamp).toLocaleTimeString()}
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="order-type">
+                                ${order.orderType === 'dinein' ? 'Dine-In <i class="fa-solid fa-utensils"></i>' : 'Takeaway <i class="fa-solid fa-bag-shopping"></i>'}
+                            </span>
+                            ${order.orderType === 'dinein' ? `<div style="font-size: 0.8rem; font-weight:600; margin-top: 4px;">Table ${order.tableNum}</div>` : ''}
+                            ${order.paymentMethod ? `<div style="font-size: 0.8rem; font-weight:600; margin-top: 4px; color: var(--primary-color);"><i class="fa-regular fa-credit-card"></i> ${order.paymentMethod}</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="order-items">
+                        ${order.items.map(item => `
+                            <div class="order-item-row">
+                                <div><span class="qty-badge">${item.quantity}</span> ${item.name}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    ${order.status === 'Pending' ?
+                    `<button class="action-btn btn-complete" onclick="toggleOrderStatus('${order.id}')">Mark as Completed</button>` :
+                    `<button class="action-btn btn-undo" onclick="toggleOrderStatus('${order.id}')">Undo Completion</button>`
+                }
+                </div>
+            `).join('');
+        }</script>
+</body>
+
+</html>

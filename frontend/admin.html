@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script>
+        const authToken = sessionStorage.getItem('adminToken');
+        if (!authToken || authToken === 'undefined' || authToken === 'null') {
+            sessionStorage.setItem('redirectAfterLogin', 'admin.html');
+            window.location.replace('login.html');
+        }
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Modern Cafe | Admin Dashboard</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .admin-sidebar {
+            width: 250px;
+            background-color: var(--primary);
+            color: var(--white);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 24px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .admin-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 0 24px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .nav-link {
+            padding: 16px 24px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: var(--transition);
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            border-left: 4px solid var(--accent);
+        }
+
+        .admin-main {
+            margin-left: 250px;
+            padding: 24px 40px;
+            background-color: var(--bg-light);
+            min-height: 100vh;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .stat-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background-color: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background-color: var(--secondary);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-info h3 {
+            font-size: 1rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .stat-info p {
+            font-size: 1.5rem;
+            color: var(--text-dark);
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .admin-table-wrapper {
+            background-color: var(--white);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 24px;
+            overflow-x: auto;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .admin-table th {
+            text-align: left;
+            padding: 16px;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border-color);
+            font-weight: 600;
+        }
+
+        .admin-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-dark);
+            vertical-align: middle;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background-color: #FEF3C7;
+            color: #D97706;
+        }
+
+        .status-completed {
+            background-color: #D1FAE5;
+            color: #059669;
+        }
+
+        @media (max-width: 1024px) {
+            .stat-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .admin-sidebar {
+                width: 80px;
+            }
+
+            .admin-sidebar span {
+                display: none;
+            }
+
+            .admin-logo {
+                font-size: 1.2rem;
+                padding: 0 10px 24px;
+            }
+
+            .nav-link {
+                justify-content: center;
+                padding: 16px 0;
+            }
+
+            .admin-main {
+                margin-left: 80px;
+                padding: 24px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stat-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-table-wrapper {
+                padding: 16px;
+            }
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .admin-sidebar, .dashboard-header, .stat-cards, .admin-table-wrapper:last-child {
+                display: none !important;
+            }
+            #qr-print-section, #qr-print-section * {
+                visibility: visible;
+            }
+            #qr-print-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none;
+                background: transparent;
+            }
+            #qr-container {
+                gap: 40px !important;
+            }
+            .btn {
+                display: none !important;
+            }
+            .input-field {
+                display: none !important;
+            }
+        }</style>
+</head>
+
+<body style="background-color: var(--bg-light);">
+
+    <nav class="admin-sidebar">
+        <div class="admin-logo">
+            <i class="fa-solid fa-mug-hot" style="margin-right: 8px;"></i><span>Admin</span>
+        </div>
+        <a href="#" class="nav-link active"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+        <a href="kitchen.html" class="nav-link"><i class="fa-solid fa-fire-burner"></i><span>Kitchen</span></a>
+        <a href="index.html" class="nav-link"><i class="fa-solid fa-mobile-screen"></i><span>Go to App</span></a>
+        <a href="#" class="nav-link" style="margin-top: auto;" onclick="clearData()"><i
+                class="fa-solid fa-trash"></i><span>Reset Data</span></a>
+    </nav>
+
+    <main class="admin-main">
+        <header class="dashboard-header">
+            <div>
+                <h1 style="font-size: 1.8rem; margin-bottom: 4px;">Overview</h1>
+                <p style="color: var(--text-muted);">Today's sales performance and analytics</p>
+            </div>
+            <button class="btn btn-outline" style="border-radius: 20px;" onclick="location.reload()">
+                <i class="fa-solid fa-rotate-right"></i> Refresh
+            </button>
+        </header>
+
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+                <div class="stat-info">
+                    <h3>Total Revenue</h3>
+                    <p id="stat-revenue">₹0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fa-solid fa-receipt"></i></div>
+                <div class="header-actions">
+                <button class="btn btn-outline" style="color:white; border-color:white; margin-right:10px"
+                    onclick="logout()">Logout</button>
+                <button class="btn btn-outline" style="color:white; border-color:white;"
+                    onclick="location.href='index.html'">Go to App</button>
+            </div>
+        </div>
+    </header>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fa-solid fa-mug-saucer"></i></div>
+                <div class="stat-info">
+                    <h3>Items Sold</h3>
+                    <p id="stat-items">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background-color: #FEF3C7; color: #D97706;"><i
+                        class="fa-solid fa-clock"></i></div>
+                <div class="stat-info">
+                    <h3>Pending Orders</h3>
+                    <p id="stat-pending">0</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-table-wrapper" style="margin-bottom: 32px;" id="qr-print-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                <h2 style="font-size: 1.4rem;">Permanent Table QR Codes</h2>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+                    <input type="text" id="qr-base-url" class="input-field" style="width: 200px; padding: 10px;" placeholder="https://mycafe.com">
+                    <input type="number" id="qr-table-count" class="input-field" style="width: 100px; padding: 10px;" value="10" min="1" placeholder="Tables">
+                    <button class="btn btn-primary" style="padding: 10px 20px;" onclick="generateQRCodes()">Generate</button>
+                    <button class="btn btn-outline" style="padding: 10px 20px; display: none;" id="btn-print-qr" onclick="window.print()">
+                        <i class="fa-solid fa-print"></i> Print Stickers
+                    </button>
+                </div>
+            </div>
+            <div id="qr-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 24px;">
+                <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 20px;">
+                    Enter your live cafe website URL (e.g., https://mycafe.com) and click Generate to create permanent, printable table menus.
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-table-wrapper">
+            <h2 style="margin-bottom: 20px; font-size: 1.4rem;">Recent Orders Tracker</h2>
+            <table class="admin-table">
+                <thead>
+                        <th>Order ID</th>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-table-body">
+                    
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script>
+        let socket;
+        let currentOrders = [];
+        let sessionToken = sessionStorage.getItem('adminToken');
+
+        function logout() {
+            sessionStorage.removeItem('adminToken');
+            window.location.replace('login.html');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Pre-fill permanent URL
+            const urlInput = document.getElementById('qr-base-url');
+            if (window.location.origin !== 'file://' && window.location.origin !== 'null') {
+                urlInput.value = window.location.origin;
+            } else {
+                urlInput.value = "http://localhost:3000";
+            }
+        
+            // Fetch initial orders via REST API
+            fetchInitialOrders();
+        
+            try {
+                if (typeof io !== "undefined") {
+                    socket = io(window.location.protocol === 'file:' ? 'http://localhost:3000' : undefined);
+                } else throw new Error("Socket not found");
+
+                socket.on('orderAdded', (order) => {
+                    currentOrders.unshift(order);
+                    renderDashboard();
+                });
+
+                socket.on('orderStatusChanged', ({ id, newStatus }) => {
+                    const orderIndex = currentOrders.findIndex(o => o.id === id);
+                    if (orderIndex !== -1) {
+                        currentOrders[orderIndex].status = newStatus;
+                        renderDashboard();
+                    }
+                });
+
+                socket.on('ordersCleared', () => {
+                    currentOrders = [];
+                    renderDashboard();
+                });
+            } catch(e) {
+                console.warn("Running in local mode - Socket.io not found.");
+                setInterval(() => {
+                    fetchInitialOrders(); // Fallback cleanly to API Polling instead of cached localStorage 
+                }, 2000);
+                fetchInitialOrders();
+            }
+        });
+
+        function generateQRCodes() {
+            const tableCount = parseInt(document.getElementById('qr-table-count').value) || 10;
+            const baseUrlInput = document.getElementById('qr-base-url').value.trim();
+            const container = document.getElementById('qr-container');
+            
+            if (!baseUrlInput) {
+                alert("Please enter your permanent Cafe Website URL first (e.g. https://mycafe.com)");
+                return;
+            }
+            
+            // Clean URL (remove trailing slash if present)
+            const baseUrl = baseUrlInput.endsWith('/') ? baseUrlInput.slice(0, -1) : baseUrlInput;
+            
+            let html = '';
+            for(let i = 1; i <= tableCount; i++) {
+                const targetUrl = `${baseUrl}/index.html?table=${i}`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(targetUrl)}`;
+                
+                html += `
+                    <div style="text-align: center; border: 1px solid var(--border-color); padding: 16px; border-radius: 12px; page-break-inside: avoid; background: white;">
+                        <img src="${qrUrl}" alt="Table ${i} QR" style="max-width: 100%; height: auto; border-radius: 8px;">
+                        <h4 style="margin-top: 12px; font-size: 1.1rem; color: var(--text-dark);">Table ${i}</h4>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; word-break: break-all;">Scan for Menu</div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+            document.getElementById('btn-print-qr').style.display = 'inline-block';
+        }
+
+        async function fetchInitialOrders() {
+            try {
+                const apiUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/orders' : '/api/orders';
+                const res = await fetch(apiUrl, {
+                    headers: { 'Authorization': `Bearer ${sessionToken}` }
+                });
+                
+                if (res.status === 401 || res.status === 403) {
+                    sessionStorage.removeItem('adminToken');
+                    sessionStorage.setItem('redirectAfterLogin', 'admin.html');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                const data = await res.json();
+                currentOrders = data.map(o => ({
+                    ...o,
+                    id: o._id,
+                    timestamp: o.createdAt,
+                    total: o.totalAmount,
+                    status: o.orderStatus
+                }));
+                renderDashboard();
+            } catch(e) {
+                console.error("Failed to fetch initial orders from DB", e);
+            }
+        }
+
+        async function clearData() {
+            if (confirm('Are you sure you want to clear all order history?')) {
+                try {
+                    const apiUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/orders' : '/api/orders';
+                    await fetch(apiUrl, { 
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${sessionToken}` }
+                    });
+                } catch(e) {
+                    console.error("Failed to delete orders", e);
+                }
+                
+                if(socket) {
+                    socket.emit('clearAllOrders');
+                } else {
+                    localStorage.removeItem('allOrders');
+                    currentOrders = [];
+                    renderDashboard();
+                }
+                localStorage.removeItem('lastOrder');
+            }
+        }
+
+        function renderDashboard() {
+            // Calculate Stats
+            let rev = 0;
+            let itemsCount = 0;
+            let pendingCount = 0;
+
+            currentOrders.forEach(o => {
+                rev += o.total;
+                itemsCount += o.items.reduce((sum, item) => sum + item.quantity, 0);
+                if (o.status === 'Pending') pendingCount++;
+            });
+
+            document.getElementById('stat-revenue').innerText = formatPrice(rev);
+            document.getElementById('stat-orders').innerText = currentOrders.length;
+            document.getElementById('stat-items').innerText = itemsCount;
+            document.getElementById('stat-pending').innerText = pendingCount;
+
+            // Render Table (Recent 15)
+            const tbody = document.getElementById('admin-table-body');
+
+            if (currentOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">No orders placed yet.</td></tr>';
+                return;
+            }
+
+            const recentOrders = [...currentOrders].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 15);
+
+            tbody.innerHTML = recentOrders.map(order => `
+                <tr>
+                    <td style="font-weight: 600;">${order.id}</td>
+                    <td>${new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td>
+                        <span style="display:inline-flex; align-items:center; gap:6px;">
+                            ${order.orderType === 'dinein' ? '<i class="fa-solid fa-shop" style="color:var(--text-muted)"></i> Dine-In' : '<i class="fa-solid fa-bag-shopping" style="color:var(--text-muted)"></i> Takeaway'}
+                        </span>
+                    </td>
+                    <td>${order.items.length} unique (${order.items.reduce((sum, i) => sum + i.quantity, 0)} total)</td>
+                    <td style="font-weight: 600; color: var(--primary);">${formatPrice(order.total)}</td>
+                    <td>
+                        <span style="font-size: 0.9rem; color: var(--text-dark);"><i class="${order.paymentMethod === 'Cash' ? 'fa-solid fa-money-bill-wave' : 'fa-regular fa-credit-card'}"></i> ${order.paymentMethod || 'N/A'}</span>
+                    </td>
+                    <td>
+                        <span class="status-badge ${order.status === 'Completed' ? 'status-completed' : 'status-pending'}">
+                            ${order.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+
+</html>

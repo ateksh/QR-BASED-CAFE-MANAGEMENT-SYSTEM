@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Modern Cafe | Product Detail</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container" style="padding-bottom: 120px; background-color: var(--white);">
+
+        <div class="product-hero">
+            <button class="nav-back" onclick="history.back()"><i class="fa-solid fa-chevron-left"></i></button>
+            <button class="nav-action"><i class="fa-regular fa-heart"></i></button>
+            <img id="pd-image" src="https://images.unsplash.com/photo-1514432324607-a09d5b4aefdd?q=80&w=400&auto=format&fit=crop" alt="Coffee">
+        </div>
+
+        <div class="product-details">
+            <div class="product-details-header">
+                <div class="product-details-title">
+                    <h1 id="pd-name">Espresso</h1>
+                    <div class="rating">
+                        <i class="fa-solid fa-star"></i> <span id="pd-rating">4.8</span> 
+                        (<span id="pd-reviews">124</span> reviews)
+                    </div>
+                </div>
+                <div class="product-price-lg" id="pd-price">₹90</div>
+            </div>
+
+            <h3 class="mt-4 mb-2" style="font-size: 1.1rem;">Description</h3>
+            <p class="product-desc" id="pd-desc">
+                A concentrated form of coffee, served in a small, strong shot.
+            </p>
+
+            <h3 class="mt-4 mb-3" style="font-size: 1.1rem;">Quantity</h3>
+            <div class="quantity-control">
+                <button class="qty-btn" onclick="updateQty(-1)"><i class="fa-solid fa-minus"></i></button>
+                <div class="qty-num" id="pd-qty">1</div>
+                <button class="qty-btn" onclick="updateQty(1)"><i class="fa-solid fa-plus"></i></button>
+            </div>
+        </div>
+
+        <div class="fixed-bottom-bar d-flex justify-between align-center">
+            <div style="display: flex; flex-direction: column;">
+                <span class="text-muted">Total Price</span>
+                <span class="product-price-lg" id="pd-total">₹90</span>
+            </div>
+            <button class="btn btn-primary" style="padding: 16px 32px; border-radius: 20px; font-size: 1.1rem;" id="pd-add-btn">
+                Add to Cart
+            </button>
+        </div>
+
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        let currentProduct = null;
+        let selectedQty = 1;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = parseInt(urlParams.get('id')) || 1; 
+            currentProduct = products.find(p => p.id === productId);
+            if(currentProduct) {
+                renderDetails();
+            } else {
+                document.body.innerHTML = '<h2>Product not found.</h2> <a href="menu.html">Go Back</a>';
+            }
+        });
+
+        function renderDetails() {
+            document.getElementById('pd-image').src = currentProduct.image;
+            document.getElementById('pd-name').innerText = currentProduct.name;
+            document.getElementById('pd-rating').innerText = currentProduct.rating;
+            document.getElementById('pd-reviews').innerText = currentProduct.reviews;
+            document.getElementById('pd-price').innerText = formatPrice(currentProduct.price);
+            document.getElementById('pd-desc').innerText = currentProduct.desc;
+            updateTotalDisplay();
+            document.getElementById('pd-add-btn').onclick = () => {
+                addToCart(currentProduct.id, selectedQty);
+                setTimeout(() => location.href = 'cart.html', 1000);
+            };
+        }
+
+        function updateQty(change) {
+            let newQty = selectedQty + change;
+            if (newQty >= 1 && newQty <= 10) {
+                selectedQty = newQty;
+                document.getElementById('pd-qty').innerText = selectedQty;
+                updateTotalDisplay();
+            }
+        }
+
+        function updateTotalDisplay() {
+            if(currentProduct) {
+                const total = currentProduct.price * selectedQty;
+                document.getElementById('pd-total').innerText = formatPrice(total);
+            }
+        }</script>
+</body>
+</html>
