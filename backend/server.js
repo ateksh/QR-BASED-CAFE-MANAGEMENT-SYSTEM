@@ -55,7 +55,12 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-    console.log(`Open multiple tabs to test Kitchen, Admin, and User screens.`);
-});
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    server.listen(PORT, () => {
+        console.log(`Server is running on http://localhost:${PORT}`);
+        console.log(`Open multiple tabs to test Kitchen, Admin, and User screens.`);
+    });
+}
+
+// Export for Vercel Serverless
+module.exports = app;
