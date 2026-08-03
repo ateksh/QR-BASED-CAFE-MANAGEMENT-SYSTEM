@@ -260,14 +260,11 @@
             </div>
             <div class="stat-card">
                 <div class="stat-icon"><i class="fa-solid fa-receipt"></i></div>
-                <div class="header-actions">
-                <button class="btn btn-outline" style="color:white; border-color:white; margin-right:10px"
-                    onclick="logout()">Logout</button>
-                <button class="btn btn-outline" style="color:white; border-color:white;"
-                    onclick="location.href='index.html'">Go to App</button>
+                <div class="stat-info">
+                    <h3>Total Orders</h3>
+                    <p id="stat-orders">0</p>
+                </div>
             </div>
-        </div>
-    </header>
             <div class="stat-card">
                 <div class="stat-icon"><i class="fa-solid fa-mug-saucer"></i></div>
                 <div class="stat-info">
@@ -325,7 +322,7 @@
     </main>
 
     <script src="js/main.js"></script>
-    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
     <script>
         let socket;
         let currentOrders = [];
@@ -343,7 +340,7 @@
             if (window.location.origin !== 'file://' && window.location.origin !== 'null') {
                 urlInput.value = window.location.origin;
             } else {
-                urlInput.value = "http://localhost:3000";
+                urlInput.value = "https://qr-based-cafe-management-system-e5h.vercel.app";
             }
         
             // Fetch initial orders via REST API
@@ -351,7 +348,7 @@
         
             try {
                 if (typeof io !== "undefined") {
-                    socket = io(window.location.protocol === 'file:' ? 'http://localhost:3000' : undefined);
+                    socket = io(window.location.protocol === 'file:' ? 'https://qr-based-cafe-management-system-e5h.vercel.app' : undefined);
                 } else throw new Error("Socket not found");
 
                 socket.on('orderAdded', (order) => {
@@ -412,7 +409,7 @@
 
         async function fetchInitialOrders() {
             try {
-                const apiUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/orders' : '/api/orders';
+                const apiUrl = window.location.protocol === 'file:' ? 'https://qr-based-cafe-management-system-e5h.vercel.app/api/orders' : '/api/orders';
                 const res = await fetch(apiUrl, {
                     headers: { 'Authorization': `Bearer ${sessionToken}` }
                 });
@@ -441,7 +438,7 @@
         async function clearData() {
             if (confirm('Are you sure you want to clear all order history?')) {
                 try {
-                    const apiUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/orders' : '/api/orders';
+                    const apiUrl = window.location.protocol === 'file:' ? 'https://qr-based-cafe-management-system-e5h.vercel.app/api/orders' : '/api/orders';
                     await fetch(apiUrl, { 
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${sessionToken}` }

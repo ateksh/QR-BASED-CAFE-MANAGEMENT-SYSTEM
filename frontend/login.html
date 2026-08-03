@@ -46,8 +46,9 @@
             }
 
             try {
-                const pyUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/auth/login' : '/api/auth/login';
-                const res = await fetch(pyUrl, {
+                const API = "https://qr-based-cafe-management-system-e5h.vercel.app";
+
+                    const res = await fetch(`${API}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: user, password: pass })

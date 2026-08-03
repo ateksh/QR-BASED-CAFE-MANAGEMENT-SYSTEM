@@ -140,7 +140,7 @@
 
     </div>
 
-    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
     <script>
         let socket;
         let currentOrders = [];
@@ -155,7 +155,7 @@
             fetchInitialOrders();
             try {
                 if (typeof io !== "undefined") {
-                    socket = io(window.location.protocol === 'file:' ? 'http://localhost:3000' : undefined);
+                    socket = io(window.location.protocol === 'file:' ? 'https://qr-based-cafe-management-system-e5h.vercel.app' : undefined);
                 } else throw new Error("Socket not found");
 
                 socket.on('orderAdded', (order) => {
@@ -186,7 +186,7 @@
 
         async function fetchInitialOrders() {
             try {
-                const apiUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/orders' : '/api/orders';
+                const apiUrl = window.location.protocol === 'file:' ? 'https://qr-based-cafe-management-system-e5h.vercel.app/api/orders' : '/api/orders';
                 const res = await fetch(apiUrl, {
                     headers: { 'Authorization': `Bearer ${sessionToken}` }
                 });
@@ -217,7 +217,7 @@
             if (orderIndex !== -1) {
                 const newStatus = currentOrders[orderIndex].status === 'Pending' ? 'Completed' : 'Pending';
                 try {
-                    const apiUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/orders' : '/api/orders';
+                    const apiUrl = window.location.protocol === 'file:' ? 'https://qr-based-cafe-management-system-e5h.vercel.app/api/orders' : '/api/orders';
                     await fetch(`${apiUrl}/${orderId}`, {
                         method: 'PUT',
                         headers: { 

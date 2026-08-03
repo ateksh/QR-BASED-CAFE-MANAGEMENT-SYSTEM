@@ -75,7 +75,7 @@
 
     </div>
 
-    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="js/main.js"></script>
 
@@ -84,7 +84,7 @@
 let socket = null;
 try {
     if (typeof io !== "undefined") {
-        socket = io(window.location.protocol === 'file:' ? 'http://localhost:3000' : undefined);
+        socket = io(window.location.protocol === 'file:' ? 'https://qr-based-cafe-management-system-e5h.vercel.app' : undefined);
     }
 } catch (e) {
     console.warn("Socket.io not found. Using local storage.");
@@ -176,7 +176,7 @@ window.handleCheckout = function(){
 
 async function initiateRazorpayPayment(orderObj, amount) {
     try {
-        const pyUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/payment/create-order' : '/api/payment/create-order';
+        const pyUrl = window.location.protocol === 'file:' ? 'https://qr-based-cafe-management-system-e5h.vercel.app/api/payment/create-order' : '/api/payment/create-order';
         const response = await fetch(pyUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -196,7 +196,7 @@ async function initiateRazorpayPayment(orderObj, amount) {
             description: "Cafe Order Payment",
             order_id: data.order.id,
             handler: async function (response) {
-                const verifyUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/payment/verify-payment' : '/api/payment/verify-payment';
+                const verifyUrl = window.location.protocol === 'file:' ? 'https://qr-based-cafe-management-system-e5h.vercel.app/api/payment/verify-payment' : '/api/payment/verify-payment';
                 const verifyRes = await fetch(verifyUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -247,7 +247,7 @@ async function finalizeOrder(newOrder) {
 
     try {
         const customerNameInput = document.getElementById('customer-name').value || "Guest";
-        const apiUrl = window.location.protocol === 'file:' ? 'http://localhost:3000/api/orders' : '/api/orders';
+        const apiUrl = window.location.protocol === 'file:' ? 'https://qr-based-cafe-management-system-e5h.vercel.app/api/orders' : '/api/orders';
 
         const response = await fetch(apiUrl, {
             method: 'POST',
